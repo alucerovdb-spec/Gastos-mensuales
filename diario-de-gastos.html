@@ -1,0 +1,622 @@
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+.dg-root {
+  --paper: #EEEAE0;
+  --paper-dark: #E3DDCC;
+  --ink: #22302B;
+  --ink-soft: #5B665F;
+  --primary: #33544A;
+  --primary-dark: #223A32;
+  --accent: #B5651D;
+  --accent-soft: #E8D3B8;
+  --danger: #9C3D3D;
+  --line: #CFC7B0;
+  --white: #FBFAF6;
+
+  font-family: 'IBM Plex Sans', sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  max-width: 440px;
+  margin: 0 auto;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.03);
+  border: 1px solid var(--line);
+}
+
+.dg-header {
+  background: var(--primary);
+  color: var(--white);
+  padding: 22px 22px 26px;
+  position: relative;
+}
+.dg-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin: 0 0 6px;
+}
+.dg-total {
+  font-family: 'Fraunces', serif;
+  font-weight: 600;
+  font-size: 38px;
+  line-height: 1;
+  margin: 0;
+}
+.dg-total-label {
+  font-size: 13px;
+  opacity: 0.8;
+  margin-top: 6px;
+}
+
+.dg-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 18px;
+}
+.dg-tab {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
+  transition: background 0.15s;
+  user-select: none;
+}
+.dg-tab.active {
+  background: var(--white);
+  color: var(--primary-dark);
+  border-color: var(--white);
+  font-weight: 500;
+}
+
+.dg-goal-wrap {
+  padding: 16px 22px 0;
+  background: var(--paper);
+}
+.dg-goal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.dg-goal-row b {
+  color: var(--ink);
+  cursor: pointer;
+  border-bottom: 1px dashed var(--ink-soft);
+}
+.dg-goal-bar-bg {
+  height: 7px;
+  background: var(--paper-dark);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.dg-goal-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.dg-goal-bar-fill.over { background: var(--danger); }
+.dg-goal-edit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.dg-goal-edit input {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 3px 6px;
+  width: 100px;
+  background: var(--white);
+}
+.dg-goal-edit button {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 12px;
+  border: none;
+  background: var(--primary);
+  color: var(--white);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.dg-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 60px;
+  padding: 18px 22px 4px;
+  background: var(--paper);
+}
+.dg-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.dg-bar {
+  width: 100%;
+  max-width: 22px;
+  background: var(--primary);
+  border-radius: 3px 3px 0 0;
+  opacity: 0.85;
+  min-height: 2px;
+  transition: height 0.25s ease;
+}
+.dg-bar.today { background: var(--accent); opacity: 1; }
+.dg-bar-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px;
+  color: var(--ink-soft);
+  text-transform: lowercase;
+}
+
+.dg-add-wrap {
+  padding: 16px 22px;
+  background: var(--paper);
+}
+.dg-add-box {
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  gap: 8px;
+}
+.dg-add-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 14px;
+  color: var(--ink);
+}
+.dg-add-box input::placeholder { color: #B3AC98; }
+.dg-add-btn {
+  border: none;
+  background: var(--accent);
+  color: var(--white);
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.dg-add-btn:active { transform: scale(0.94); }
+.dg-hint {
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  padding-left: 2px;
+}
+.dg-error {
+  font-size: 11.5px;
+  color: var(--danger);
+  margin-top: 6px;
+  padding-left: 2px;
+}
+
+.dg-perf {
+  height: 14px;
+  background:
+    radial-gradient(circle at 6px 0, transparent 6px, var(--paper) 6.5px) repeat-x,
+    var(--white);
+  background-size: 16px 16px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.dg-list {
+  background: var(--white);
+  padding: 6px 10px 14px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.dg-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 10px;
+  border-bottom: 1px solid #F0EDE3;
+}
+.dg-row:last-child { border-bottom: none; }
+.dg-icon {
+  font-size: 17px;
+  width: 26px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.dg-row-main { flex: 1; min-width: 0; }
+.dg-row-name {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dg-row-date {
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  font-family: 'IBM Plex Mono', monospace;
+}
+.dg-row-amount {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13.5px;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+.dg-row-del {
+  border: none;
+  background: transparent;
+  color: #C7BFA8;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+.dg-row-del:hover { color: var(--danger); }
+
+.dg-empty {
+  text-align: center;
+  padding: 34px 20px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+.dg-empty-emoji { font-size: 26px; margin-bottom: 8px; }
+
+.dg-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--ink-soft);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+}
+</style>
+
+<div class="dg-root">
+  <div class="dg-header">
+    <p class="dg-eyebrow" id="dg-eyebrow">Diario de gastos</p>
+    <p class="dg-total" id="dg-total">$0</p>
+    <p class="dg-total-label" id="dg-total-label">gastado hoy</p>
+    <div class="dg-tabs">
+      <div class="dg-tab active" data-view="hoy">hoy</div>
+      <div class="dg-tab" data-view="semana">7 días</div>
+      <div class="dg-tab" data-view="mes">mes</div>
+    </div>
+  </div>
+
+  <div class="dg-goal-wrap">
+    <div id="dg-goal-display">
+      <div class="dg-goal-row">
+        <span>meta mensual: <b id="dg-goal-amount">sin definir</b></span>
+        <span id="dg-goal-remaining"></span>
+      </div>
+      <div class="dg-goal-bar-bg"><div class="dg-goal-bar-fill" id="dg-goal-bar" style="width:0%"></div></div>
+    </div>
+    <div id="dg-goal-edit" class="dg-goal-edit" style="display:none">
+      <input type="number" id="dg-goal-input" placeholder="ej: 150000" />
+      <button id="dg-goal-save">guardar</button>
+    </div>
+  </div>
+
+  <div class="dg-chart" id="dg-chart"></div>
+
+  <div class="dg-add-wrap">
+    <div class="dg-add-box">
+      <input id="dg-input" type="text" placeholder="ej: colación 2500" autocomplete="off" />
+      <button class="dg-add-btn" id="dg-add-btn">＋</button>
+    </div>
+    <p class="dg-hint" id="dg-hint">Escribe qué compraste y el precio, luego Enter.</p>
+  </div>
+
+  <div class="dg-perf"></div>
+  <div class="dg-list" id="dg-list">
+    <div class="dg-loading">cargando...</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORE_KEY = 'expenses';
+  const GOAL_KEY = 'monthly_goal';
+  let entries = [];
+  let goal = null;
+  let currentView = 'hoy';
+
+  const root = document.currentScript.previousElementSibling;
+  // fallback selectors relative to whole widget (document scope is fine since it's isolated iframe)
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+
+  function fmt(n) {
+    return '$' + Math.round(n).toLocaleString('es-CL');
+  }
+
+  function todayKey(d) {
+    return d.toLocaleDateString('en-CA'); // YYYY-MM-DD local
+  }
+
+  function categoryFor(name) {
+    const n = name.toLowerCase();
+    if (/(café|cafe|te |té )/.test(n)) return '☕';
+    if (/(almuerzo|colación|colacion|comida|sandwich|pan|empanada|sushi|pizza|completo)/.test(n)) return '🍽️';
+    if (/(micro|bus|metro|uber|didi|bencina|taxi|colectivo|pasaje)/.test(n)) return '🚌';
+    if (/(arriendo|luz|agua|gas|internet|casa)/.test(n)) return '🏠';
+    if (/(libro|apunte|fotocopia|cuaderno|lápiz|lapiz|universidad|matricula|matrícula)/.test(n)) return '📚';
+    if (/(farmacia|remedio|medicamento|doctor|salud|dentista)/.test(n)) return '💊';
+    if (/(cine|netflix|spotify|salida|carrete|bar|cerveza)/.test(n)) return '🎬';
+    return '🛍️';
+  }
+
+  function parseEntry(raw) {
+    const str = raw.trim();
+    if (!str) return null;
+    const match = str.match(/(-?[\d.,]+)\s*$/);
+    if (!match) return null;
+    let numStr = match[1];
+    const name = str.slice(0, match.index).trim();
+    if (!name) return null;
+    // Chilean style: dots as thousands separators. Remove dots, then handle a trailing comma decimal by dropping it (CLP has no cents in practice).
+    numStr = numStr.replace(/\./g, '').replace(/,\d+$/, '').replace(/,/g, '');
+    const amount = parseInt(numStr, 10);
+    if (isNaN(amount) || amount <= 0) return null;
+    return {
+      id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+      name: name.charAt(0).toUpperCase() + name.slice(1),
+      amount,
+      date: new Date().toISOString()
+    };
+  }
+
+  async function loadData() {
+    try {
+      const res = await window.storage.get(STORE_KEY, false);
+      entries = res && res.value ? JSON.parse(res.value) : [];
+    } catch (e) {
+      entries = [];
+    }
+    try {
+      const res = await window.storage.get(GOAL_KEY, false);
+      goal = res && res.value ? JSON.parse(res.value) : null;
+    } catch (e) {
+      goal = null;
+    }
+  }
+
+  async function saveEntries() {
+    try {
+      await window.storage.set(STORE_KEY, JSON.stringify(entries), false);
+    } catch (e) {
+      console.error('No se pudo guardar', e);
+    }
+  }
+
+  async function saveGoal() {
+    try {
+      await window.storage.set(GOAL_KEY, JSON.stringify(goal), false);
+    } catch (e) {
+      console.error('No se pudo guardar la meta', e);
+    }
+  }
+
+  function isSameDay(dateA, dateB) {
+    return todayKey(dateA) === todayKey(dateB);
+  }
+
+  function filterByView(view) {
+    const now = new Date();
+    if (view === 'hoy') {
+      return entries.filter(e => isSameDay(new Date(e.date), now));
+    }
+    if (view === 'semana') {
+      const cutoff = new Date(now);
+      cutoff.setDate(cutoff.getDate() - 6);
+      cutoff.setHours(0,0,0,0);
+      return entries.filter(e => new Date(e.date) >= cutoff);
+    }
+    if (view === 'mes') {
+      return entries.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      });
+    }
+    return entries;
+  }
+
+  function currentMonthEntries() {
+    const now = new Date();
+    return entries.filter(e => {
+      const d = new Date(e.date);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    });
+  }
+
+  function renderHeader() {
+    const view = filterByView(currentView);
+    const total = view.reduce((s, e) => s + e.amount, 0);
+    $('#dg-total').textContent = fmt(total);
+    const labels = { hoy: 'gastado hoy', semana: 'gastado en 7 días', mes: 'gastado este mes' };
+    $('#dg-total-label').textContent = labels[currentView];
+  }
+
+  function renderGoal() {
+    const monthTotal = currentMonthEntries().reduce((s, e) => s + e.amount, 0);
+    if (goal && goal > 0) {
+      $('#dg-goal-amount').textContent = fmt(goal);
+      const remaining = goal - monthTotal;
+      const pct = Math.min(100, (monthTotal / goal) * 100);
+      const bar = $('#dg-goal-bar');
+      bar.style.width = pct + '%';
+      bar.classList.toggle('over', remaining < 0);
+      const remainingEl = $('#dg-goal-remaining');
+      if (remaining >= 0) {
+        remainingEl.textContent = fmt(remaining) + ' disponible';
+        remainingEl.style.color = 'var(--ink-soft)';
+      } else {
+        remainingEl.textContent = fmt(Math.abs(remaining)) + ' sobre la meta';
+        remainingEl.style.color = 'var(--danger)';
+      }
+    } else {
+      $('#dg-goal-amount').textContent = 'sin definir';
+      $('#dg-goal-remaining').textContent = '';
+      $('#dg-goal-bar').style.width = '0%';
+    }
+  }
+
+  function renderChart() {
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+    const totals = days.map(d => {
+      return entries.filter(e => isSameDay(new Date(e.date), d))
+                     .reduce((s, e) => s + e.amount, 0);
+    });
+    const max = Math.max(...totals, 1);
+    const chart = $('#dg-chart');
+    chart.innerHTML = '';
+    const dayLabels = ['dom','lun','mar','mié','jue','vie','sáb'];
+    days.forEach((d, i) => {
+      const col = document.createElement('div');
+      col.className = 'dg-bar-col';
+      const bar = document.createElement('div');
+      bar.className = 'dg-bar' + (i === 6 ? ' today' : '');
+      const h = Math.max(2, Math.round((totals[i] / max) * 46));
+      bar.style.height = h + 'px';
+      bar.title = fmt(totals[i]);
+      const label = document.createElement('div');
+      label.className = 'dg-bar-label';
+      label.textContent = dayLabels[d.getDay()];
+      col.appendChild(bar);
+      col.appendChild(label);
+      chart.appendChild(col);
+    });
+  }
+
+  function renderList() {
+    const view = filterByView(currentView).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+    const list = $('#dg-list');
+    list.innerHTML = '';
+    if (view.length === 0) {
+      list.innerHTML = '<div class="dg-empty"><div class="dg-empty-emoji">🧾</div>Nada registrado todavía.<br/>Escribe tu primer gasto arriba.</div>';
+      return;
+    }
+    view.forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'dg-row';
+      const d = new Date(e.date);
+      const timeStr = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' }) + ' · ' +
+                      d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+      row.innerHTML = `
+        <div class="dg-icon">${categoryFor(e.name)}</div>
+        <div class="dg-row-main">
+          <div class="dg-row-name">${e.name}</div>
+          <div class="dg-row-date">${timeStr}</div>
+        </div>
+        <div class="dg-row-amount">${fmt(e.amount)}</div>
+        <button class="dg-row-del" data-id="${e.id}">✕</button>
+      `;
+      list.appendChild(row);
+    });
+    list.querySelectorAll('.dg-row-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        entries = entries.filter(e => e.id !== id);
+        await saveEntries();
+        renderAll();
+      });
+    });
+  }
+
+  function renderAll() {
+    renderHeader();
+    renderGoal();
+    renderChart();
+    renderList();
+  }
+
+  async function handleAdd() {
+    const input = $('#dg-input');
+    const hint = $('#dg-hint');
+    const parsed = parseEntry(input.value);
+    if (!parsed) {
+      hint.textContent = 'No entendí el monto. Prueba así: "colación 2500".';
+      hint.className = 'dg-error';
+      return;
+    }
+    entries.push(parsed);
+    await saveEntries();
+    input.value = '';
+    hint.textContent = 'Escribe qué compraste y el precio, luego Enter.';
+    hint.className = 'dg-hint';
+    renderAll();
+  }
+
+  function bindEvents() {
+    $('#dg-add-btn').addEventListener('click', handleAdd);
+    $('#dg-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAdd();
+    });
+    $$('.dg-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        $$('.dg-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentView = tab.getAttribute('data-view');
+        renderAll();
+      });
+    });
+    $('#dg-goal-amount').addEventListener('click', () => {
+      $('#dg-goal-display').querySelector('.dg-goal-bar-bg').style.display = 'none';
+      $('#dg-goal-edit').style.display = 'flex';
+      $('#dg-goal-input').value = goal || '';
+      $('#dg-goal-input').focus();
+    });
+    $('#dg-goal-save').addEventListener('click', async () => {
+      const val = parseInt($('#dg-goal-input').value, 10);
+      if (!isNaN(val) && val > 0) {
+        goal = val;
+        await saveGoal();
+      }
+      $('#dg-goal-edit').style.display = 'none';
+      $('#dg-goal-display').querySelector('.dg-goal-bar-bg').style.display = 'block';
+      renderAll();
+    });
+    $('#dg-goal-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $('#dg-goal-save').click();
+    });
+  }
+
+  async function init() {
+    await loadData();
+    bindEvents();
+    renderAll();
+  }
+
+  init();
+})();
+</script>
