@@ -95,7 +95,6 @@
     font-weight: 500;
   }
 
-  /* Navegador de meses histórico */
   .dg-month-nav {
     display: none;
     align-items: center;
@@ -365,7 +364,7 @@
 
 <div class="dg-root">
   <div class="dg-header">
-    <p class="dg-eyebrow" id="dg-eyebrow">Cargando fecha...</p>
+    <p class="dg-eyebrow" id="dg-eyebrow">Diario de gastos</p>
     <p class="dg-total" id="dg-total">$0</p>
     <p class="dg-total-label" id="dg-total-label">gastado hoy</p>
     <div class="dg-tabs">
@@ -376,7 +375,7 @@
     
     <div class="dg-month-nav" id="dg-month-nav">
       <button id="nav-prev">◀</button>
-      <div class="dg-month-label" id="dg-month-label">Julio 2026</div>
+      <div class="dg-month-label" id="dg-month-label"></div>
       <button id="nav-next">▶</button>
     </div>
   </div>
@@ -422,7 +421,6 @@
   let goal = null;
   let currentView = 'hoy';
   
-  // Variables para el control de la historia de meses
   let viewMonth = new Date().getMonth();
   let viewYear = new Date().getFullYear();
 
@@ -464,248 +462,12 @@
       id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
       name: name.charAt(0).toUpperCase() + name.slice(1),
       amount,
-      date: new Date().toISOString() // Se guarda la fecha real del momento de ingreso
+      date: new Date().toISOString() 
     };
   }
 
   async function loadData() {
     try {
       const res = localStorage.getItem(STORE_KEY);
-      entries = res ? JSON.parse(res) : [];
-    } catch (e) { entries = []; }
-    try {
-      const res = localStorage.getItem(GOAL_KEY);
-      goal = res ? JSON.parse(res) : null;
-    } catch (e) { goal = null; }
-  }
-
-  async function saveEntries() {
-    try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(entries));
-    } catch (e) { console.error('Error al guardar', e); }
-  }
-  async function saveGoal() {
-    try {
-      localStorage.setItem(GOAL_KEY, JSON.stringify(goal));
-    } catch (e) { console.error('Error al guardar meta', e); }
-  }
-
-  function isSameDay(dateA, dateB) {
-    return todayKey(dateA) === todayKey(dateB);
-  }
-
-  // Actualiza la fecha principal en la cabecera
-  function renderRealDate() {
-    const today = new Date();
-    const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    let dateStr = today.toLocaleDateString('es-CL', options);
-    $('#dg-eyebrow').textContent = dateStr;
-  }
-
-  // Filtra los datos según la vista seleccionada y el mes en el historial
-  function filterByView(view) {
-    const now = new Date();
-    if (view === 'hoy') {
-      return entries.filter(e => isSameDay(new Date(e.date), now));
-    }
-    if (view === 'semana') {
-      const cutoff = new Date(now);
-      cutoff.setDate(cutoff.getDate() - 6);
-      cutoff.setHours(0,0,0,0);
-      return entries.filter(e => new Date(e.date) >= cutoff);
-    }
-    if (view === 'mes') {
-      return entries.filter(e => {
-        const d = new Date(e.date);
-        return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
-      });
-    }
-    return entries;
-  }
-
-  function renderHeader() {
-    const viewData = filterByView(currentView);
-    const total = viewData.reduce((s, e) => s + e.amount, 0);
-    $('#dg-total').textContent = fmt(total);
-    
-    const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    
-    if (currentView === 'hoy') $('#dg-total-label').textContent = 'gastado hoy';
-    else if (currentView === 'semana') $('#dg-total-label').textContent = 'gastado en 7 días';
-    else if (currentView === 'mes') {
-       $('#dg-total-label').textContent = `gastado en ${monthNames[viewMonth]}`;
-       $('#dg-month-label').textContent = `${monthNames[viewMonth]} ${viewYear}`;
-    }
-
-    // Mostrar/ocultar barra de navegación de meses y el gráfico
-    if (currentView === 'mes') {
-      $('#dg-month-nav').style.display = 'flex';
-      $('#dg-chart').style.display = 'none';
-    } else {
-      $('#dg-month-nav').style.display = 'none';
-      $('#dg-chart').style.display = 'flex';
-    }
-  }
-
-  function renderGoal() {
-    const viewData = filterByView('mes'); // La meta se calcula en base al mes visualizado
-    const monthTotal = viewData.reduce((s, e) => s + e.amount, 0);
-    
-    if (goal && goal > 0) {
-      $('#dg-goal-amount').textContent = fmt(goal);
-      const remaining = goal - monthTotal;
-      const pct = Math.min(100, (monthTotal / goal) * 100);
-      const bar = $('#dg-goal-bar');
-      bar.style.width = pct + '%';
-      bar.classList.toggle('over', remaining < 0);
-      
-      const remainingEl = $('#dg-goal-remaining');
-      if (remaining >= 0) {
-        remainingEl.textContent = fmt(remaining) + ' disponible';
-        remainingEl.style.color = 'var(--ink-soft)';
-      } else {
-        remainingEl.textContent = fmt(Math.abs(remaining)) + ' sobre la meta';
-        remainingEl.style.color = 'var(--danger)';
-      }
-    } else {
-      $('#dg-goal-amount').textContent = 'sin definir';
-      $('#dg-goal-remaining').textContent = '';
-      $('#dg-goal-bar').style.width = '0%';
-    }
-  }
-
-  function renderChart() {
-    if (currentView === 'mes') return; // El gráfico se oculta en la vista mensual para dejar espacio
-
-    const days = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      days.push(d);
-    }
-    const totals = days.map(d => {
-      return entries.filter(e => isSameDay(new Date(e.date), d))
-                     .reduce((s, e) => s + e.amount, 0);
-    });
-    const max = Math.max(...totals, 1);
-    const chart = $('#dg-chart');
-    chart.innerHTML = '';
-    const dayLabels = ['do','lu','ma','mi','ju','vi','sá'];
-    
-    days.forEach((d, i) => {
-      const col = document.createElement('div');
-      col.className = 'dg-bar-col';
-      const bar = document.createElement('div');
-      bar.className = 'dg-bar' + (i === 6 ? ' today' : '');
-      const h = Math.max(2, Math.round((totals[i] / max) * 46));
-      bar.style.height = h + 'px';
-      
-      const label = document.createElement('div');
-      label.className = 'dg-bar-label';
-      label.textContent = dayLabels[d.getDay()];
-      col.appendChild(bar);
-      col.appendChild(label);
-      chart.appendChild(col);
-    });
-  }
-
-  function renderList() {
-    const viewData = filterByView(currentView).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
-    const list = $('#dg-list');
-    list.innerHTML = '';
-    
-    if (viewData.length === 0) {
-      list.innerHTML = '<div class="dg-empty">Nada registrado en este periodo.</div>';
-      return;
-    }
-    
-    viewData.forEach(e => {
-      const row = document.createElement('div');
-      row.className = 'dg-row';
-      const d = new Date(e.date);
-      const timeStr = d.toLocaleDateString('es-CL', { day: '2-digit', month: '2-digit' }) + ' · ' +
-                      d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-      row.innerHTML = `
-        <div class="dg-icon">${categoryFor(e.name)}</div>
-        <div class="dg-row-main">
-          <div class="dg-row-name">${e.name}</div>
-          <div class="dg-row-date">${timeStr}</div>
-        </div>
-        <div class="dg-row-amount">${fmt(e.amount)}</div>
-        <button class="dg-row-del" data-id="${e.id}">✕</button>
-      `;
-      list.appendChild(row);
-    });
-
-    list.querySelectorAll('.dg-row-del').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        const id = btn.getAttribute('data-id');
-        entries = entries.filter(e => e.id !== id);
-        await saveEntries();
-        renderAll();
-      });
-    });
-  }
-
-  function renderAll() {
-    renderRealDate();
-    renderHeader();
-    renderGoal();
-    renderChart();
-    renderList();
-  }
-
-  async function handleAdd() {
-    const input = $('#dg-input');
-    const hint = $('#dg-hint');
-    const parsed = parseEntry(input.value);
-    if (!parsed) {
-      hint.textContent = 'Formato inválido. Prueba: "almuerzo 5000"';
-      hint.className = 'dg-error';
-      return;
-    }
-    entries.push(parsed);
-    await saveEntries();
-    
-    input.value = '';
-    hint.textContent = 'Gasto registrado correctamente.';
-    hint.className = 'dg-hint';
-    
-    // Si agregamos un gasto, es buena idea volver al mes actual si estábamos navegando en el pasado
-    viewMonth = new Date().getMonth();
-    viewYear = new Date().getFullYear();
-    
-    renderAll();
-    
-    // Devolver mensaje a la normalidad después de 2 segundos
-    setTimeout(() => {
-      if (hint.textContent === 'Gasto registrado correctamente.') {
-        hint.textContent = 'Escribe qué compraste y el precio, luego Enter.';
-      }
-    }, 2500);
-  }
-
-  function bindEvents() {
-    $('#dg-add-btn').addEventListener('click', handleAdd);
-    $('#dg-input').addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') handleAdd();
-    });
-
-    $$('.dg-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        $$('.dg-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        currentView = tab.getAttribute('data-view');
-        // Al volver a la pestaña mensual, reseteamos la vista al mes actual
-        if(currentView === 'mes') {
-          viewMonth = new Date().getMonth();
-          viewYear = new Date().getFullYear();
-        }
-        renderAll();
-      });
-    });
-
-    // Eventos para navegación de meses
-    $('#nav-prev').addEventListener('click', () => {
-      viewMonth--;
+      let parsed = res ? JSON.parse(res) : [];
+      if (!Array.isArray(
