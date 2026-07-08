@@ -262,15 +262,6 @@
     padding-left: 2px;
   }
 
-  .dg-perf {
-    height: 14px;
-    background:
-      radial-gradient(circle at 6px 0, transparent 6px, var(--paper) 6.5px) repeat-x,
-      var(--white);
-    background-size: 16px 16px;
-    border-bottom: 1px dashed var(--line);
-  }
-
   .dg-list {
     background: var(--white);
     padding: 6px 10px 14px;
@@ -352,19 +343,15 @@
     justify-content: center;
     gap: 6px;
   }
-  .dg-btn-outline:active {
-    background: var(--paper-dark);
-  }
-  .dg-text-danger {
-    color: var(--danger);
-  }
+  .dg-btn-outline:active { background: var(--paper-dark); }
+  .dg-text-danger { color: var(--danger); }
   </style>
 </head>
 <body>
 
 <div class="dg-root">
   <div class="dg-header">
-    <p class="dg-eyebrow" id="dg-eyebrow">Diario de gastos</p>
+    <p class="dg-eyebrow" id="dg-eyebrow">Cargando...</p>
     <p class="dg-total" id="dg-total">$0</p>
     <p class="dg-total-label" id="dg-total-label">gastado hoy</p>
     <div class="dg-tabs">
@@ -404,12 +391,11 @@
     <p class="dg-hint" id="dg-hint">Escribe qué compraste y el precio, luego Enter.</p>
   </div>
 
-  <div class="dg-perf"></div>
   <div class="dg-list" id="dg-list"></div>
 
   <div class="dg-actions">
-    <button class="dg-btn-outline" id="dg-export-btn">📥 Exportar Vista</button>
-    <button class="dg-btn-outline dg-text-danger" id="dg-reset-btn">🗑️ Eliminar Vista</button>
+    <button class="dg-btn-outline" id="dg-export-btn">📥 Exportar Resumen</button>
+    <button class="dg-btn-outline dg-text-danger" id="dg-reset-btn">🗑️ Eliminar Resumen</button>
   </div>
 </div>
 
@@ -426,13 +412,10 @@
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
+  const pad = (n) => n.toString().padStart(2, '0');
 
   function fmt(n) {
     return '$' + Math.round(n).toLocaleString('es-CL');
-  }
-
-  function todayKey(d) {
-    return d.toLocaleDateString('en-CA');
   }
 
   function categoryFor(name) {
@@ -467,7 +450,354 @@
   }
 
   async function loadData() {
+    const res = localStorage.getItem(STORE_KEY);
+    let parsed = res ? JSON.parse(res) : [];
+    if (!Array.isArray(parsed)) parsed = [];
+    
+    entries = parsed.filter(e => {
+      if (!e || typeof e.amount !== 'number' || !e.date) return false;
+      return !isNaN(new Date(e.date).getTime());
+    });
+    
+    if (entries.length !== parsed.length) {
+      localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+    }
+    
+    const goalRes = localStorage.getItem(GOAL_KEY);
+    goal = goalRes ? JSON.parse(goalRes) : null;
+  }
+
+  async function saveEntries() {
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+  }
+  
+  async function saveGoal() {
+    localStorage.setItem(GOAL_KEY, JSON.stringify(goal));
+  }
+
+  function isSameDay(dateA, dateB) {
+    return dateA.getFullYear() === dateB.getFullYear() &&
+           dateA.getMonth() === dateB.getMonth() &&
+           dateA.getDate() === dateB.getDate();
+  }
+
+  function renderRealDate() {
+    const today = new Date();
+    const days = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    const months = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    $('#dg-eyebrow').textContent = `${days[today.getDay()]}, ${today.getDate()} de ${months[today.getMonth()]} de ${today.getFullYear()}`;
+  }
+
+  function filterByView(view) {
+    const now = new Date();
+    if (view === 'hoy') {
+      return entries.filter(e => isSameDay(new Date(e.date), now));
+    }
+    if (view === 'semana') {
+      const cutoff = new Date(now);
+      cutoff.setDate(cutoff.getDate() - 6);
+      cutoff.setHours(0,0,0,0);
+      return entries.filter(e => new Date(e.date) >= cutoff);
+    }
+    if (view === 'mes') {
+      return entries.filter(e => {
+        const d = new Date(e.date);
+        return d.getFullYear() === viewYear && d.getMonth() === viewMonth;
+      });
+    }
+    return entries;
+  }
+
+  function renderHeader() {
+    const viewData = filterByView(currentView);
+    const total = viewData.reduce((s, e) => s + e.amount, 0);
+    $('#dg-total').textContent = fmt(total);
+    
+    const monthNames = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    
+    if (currentView === 'hoy') $('#dg-total-label').textContent = 'gastado hoy';
+    else if (currentView === 'semana') $('#dg-total-label').textContent = 'gastado en 7 días';
+    else if (currentView === 'mes') {
+       $('#dg-total-label').textContent = `gastado en ${monthNames[viewMonth]}`;
+       $('#dg-month-label').textContent = `${monthNames[viewMonth]} ${viewYear}`;
+    }
+
+    if (currentView === 'mes') {
+      $('#dg-month-nav').style.display = 'flex';
+      $('#dg-chart').style.display = 'none';
+    } else {
+      $('#dg-month-nav').style.display = 'none';
+      $('#dg-chart').style.display = 'flex';
+    }
+  }
+
+  function renderGoal() {
+    const viewData = filterByView('mes'); 
+    const monthTotal = viewData.reduce((s, e) => s + e.amount, 0);
+    
+    if (goal && goal > 0) {
+      $('#dg-goal-amount').textContent = fmt(goal);
+      const remaining = goal - monthTotal;
+      const pct = Math.min(100, (monthTotal / goal) * 100);
+      const bar = $('#dg-goal-bar');
+      bar.style.width = pct + '%';
+      bar.classList.toggle('over', remaining < 0);
+      
+      const remainingEl = $('#dg-goal-remaining');
+      if (remaining >= 0) {
+        remainingEl.textContent = fmt(remaining) + ' disponible';
+        remainingEl.style.color = 'var(--ink-soft)';
+      } else {
+        remainingEl.textContent = fmt(Math.abs(remaining)) + ' sobre la meta';
+        remainingEl.style.color = 'var(--danger)';
+      }
+    } else {
+      $('#dg-goal-amount').textContent = 'sin definir';
+      $('#dg-goal-remaining').textContent = '';
+      $('#dg-goal-bar').style.width = '0%';
+    }
+  }
+
+  function renderChart() {
+    if (currentView === 'mes') return; 
+
+    const days = [];
+    const now = new Date();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+    const totals = days.map(d => {
+      return entries.filter(e => isSameDay(new Date(e.date), d))
+                     .reduce((s, e) => s + e.amount, 0);
+    });
+    const max = Math.max(...totals, 1);
+    const chart = $('#dg-chart');
+    chart.innerHTML = '';
+    const dayLabels = ['do','lu','ma','mi','ju','vi','sá'];
+    
+    days.forEach((d, i) => {
+      const col = document.createElement('div');
+      col.className = 'dg-bar-col';
+      const bar = document.createElement('div');
+      bar.className = 'dg-bar' + (i === 6 ? ' today' : '');
+      const h = Math.max(2, Math.round((totals[i] / max) * 46));
+      bar.style.height = h + 'px';
+      
+      const label = document.createElement('div');
+      label.className = 'dg-bar-label';
+      label.textContent = dayLabels[d.getDay()];
+      col.appendChild(bar);
+      col.appendChild(label);
+      chart.appendChild(col);
+    });
+  }
+
+  function renderList() {
+    const viewData = filterByView(currentView).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+    const list = $('#dg-list');
+    list.innerHTML = '';
+    
+    if (viewData.length === 0) {
+      list.innerHTML = '<div class="dg-empty">Nada registrado en este periodo.</div>';
+      return;
+    }
+    
+    viewData.forEach(e => {
+      const row = document.createElement('div');
+      row.className = 'dg-row';
+      const d = new Date(e.date);
+      const timeStr = `${pad(d.getDate())}/${pad(d.getMonth()+1)} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      row.innerHTML = `
+        <div class="dg-icon">${categoryFor(e.name)}</div>
+        <div class="dg-row-main">
+          <div class="dg-row-name">${e.name}</div>
+          <div class="dg-row-date">${timeStr}</div>
+        </div>
+        <div class="dg-row-amount">${fmt(e.amount)}</div>
+        <button class="dg-row-del" data-id="${e.id}">✕</button>
+      `;
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll('.dg-row-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = btn.getAttribute('data-id');
+        entries = entries.filter(e => e.id !== id);
+        await saveEntries();
+        renderAll();
+      });
+    });
+  }
+
+  function renderAll() {
+    renderRealDate();
+    renderHeader();
+    renderGoal();
+    renderChart();
+    renderList();
+  }
+
+  async function handleAdd() {
+    const input = $('#dg-input');
+    const hint = $('#dg-hint');
+    const parsed = parseEntry(input.value);
+    if (!parsed) {
+      hint.textContent = 'Formato inválido. Prueba: "almuerzo 5000"';
+      hint.className = 'dg-error';
+      return;
+    }
+    entries.push(parsed);
+    await saveEntries();
+    
+    input.value = '';
+    hint.textContent = 'Gasto registrado correctamente.';
+    hint.className = 'dg-hint';
+    
+    viewMonth = new Date().getMonth();
+    viewYear = new Date().getFullYear();
+    
+    renderAll();
+    
+    setTimeout(() => {
+      if (hint.textContent === 'Gasto registrado correctamente.') {
+        hint.textContent = 'Escribe qué compraste y el precio, luego Enter.';
+      }
+    }, 2500);
+  }
+
+  function bindEvents() {
+    $('#dg-add-btn').addEventListener('click', handleAdd);
+    $('#dg-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAdd();
+    });
+
+    $$('.dg-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        $$('.dg-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        currentView = tab.getAttribute('data-view');
+        if(currentView === 'mes') {
+          viewMonth = new Date().getMonth();
+          viewYear = new Date().getFullYear();
+        }
+        renderAll();
+      });
+    });
+
+    $('#nav-prev').addEventListener('click', () => {
+      viewMonth--;
+      if (viewMonth < 0) {
+        viewMonth = 11;
+        viewYear--;
+      }
+      renderAll();
+    });
+    $('#nav-next').addEventListener('click', () => {
+      viewMonth++;
+      if (viewMonth > 11) {
+        viewMonth = 0;
+        viewYear++;
+      }
+      renderAll();
+    });
+
+    $('#dg-goal-amount').addEventListener('click', () => {
+      $('#dg-goal-display').querySelector('.dg-goal-bar-bg').style.display = 'none';
+      $('#dg-goal-edit').style.display = 'flex';
+      $('#dg-goal-input').value = goal || '';
+      $('#dg-goal-input').focus();
+    });
+
+    $('#dg-goal-save').addEventListener('click', async () => {
+      const val = parseInt($('#dg-goal-input').value, 10);
+      if (!isNaN(val) && val > 0) {
+        goal = val;
+        await saveGoal();
+      }
+      $('#dg-goal-edit').style.display = 'none';
+      $('#dg-goal-display').querySelector('.dg-goal-bar-bg').style.display = 'block';
+      renderAll();
+    });
+
+    $('#dg-goal-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') $('#dg-goal-save').click();
+    });
+    
+    $('#dg-export-btn').addEventListener('click', async () => {
+      const viewData = filterByView(currentView);
+      if (viewData.length === 0) {
+        alert('No hay gastos en esta vista para exportar.');
+        return;
+      }
+      let csv = 'Fecha,Hora,Categoria,Gasto,Monto\n';
+      viewData.forEach(e => {
+        const d = new Date(e.date);
+        const dateStr = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+        const timeStr = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        const cat = categoryFor(e.name);
+        csv += `${dateStr},${timeStr},${cat},${e.name},${e.amount}\n`;
+      });
+      
+      const filename = `Resumen_Gastos_${new Date().getTime()}.csv`;
+      const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
+      
+      // Intentar API de compartir nativa (Estándar para iOS PWA)
+      if (navigator.share && navigator.canShare) {
+        try {
+          const file = new File([blob], filename, { type: 'text/csv' });
+          if (navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: 'Resumen de Gastos',
+              files: [file]
+            });
+            return;
+          }
+        } catch (error) {
+          console.log('Share API falló o fue cancelada.');
+        }
+      }
+      
+      // Fallback tradicional
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    $('#dg-reset-btn').addEventListener('click', async () => {
+      let mensaje = '';
+      if (currentView === 'hoy') mensaje = '¿Eliminar gastos de HOY?';
+      else if (currentView === 'semana') mensaje = '¿Eliminar gastos de los ÚLTIMOS 7 DÍAS?';
+      else if (currentView === 'mes') mensaje = `¿Eliminar gastos de ${$('#dg-month-label').textContent}?`;
+
+      if (confirm(mensaje + ' Esta acción no se puede deshacer.')) {
+        const idsToRemove = filterByView(currentView).map(e => e.id);
+        entries = entries.filter(e => !idsToRemove.includes(e.id));
+        await saveEntries();
+        renderAll();
+      }
+    });
+  }
+
+  async function init() {
     try {
-      const res = localStorage.getItem(STORE_KEY);
-      let parsed = res ? JSON.parse(res) : [];
-      if (!Array.isArray(
+      await loadData();
+      bindEvents();
+      renderAll();
+    } catch (e) {
+      $('#dg-hint').textContent = 'Error crítico: ' + e.message;
+      $('#dg-hint').className = 'dg-error';
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
